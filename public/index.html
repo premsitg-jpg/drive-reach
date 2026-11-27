@@ -85,7 +85,7 @@ footer{max-width:1240px;margin:auto;padding:0 max(5vw,16px) 40px;font-size:13px;
 </head>
 <body>
 <header>
-  <h1>ขับกี่ ชม. ไปถึงไหน</h1><span class="ver">v1.3.0</span>
+  <h1>ขับกี่ ชม. ไปถึงไหน</h1><select id="verSel" aria-label="เลือกเวอร์ชัน" style="font:600 13px Sarabun,sans-serif;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:99px;padding:4px 8px;min-height:32px;cursor:pointer"><option style="color:#111" value="index.html" selected>v1.4.0 (ล่าสุด)</option><option style="color:#111" value="v1-3.html">v1.3.0</option><option style="color:#111" value="v1-2.html">v1.2.0</option><option style="color:#111" value="v1-1.html">v1.1.0</option><option style="color:#111" value="v1-0.html">v1.0.0</option></select><script>{const v=document.getElementById("verSel");v.addEventListener("change",()=>{location.href=v.value})}</script>
   <div class="from">จุดเริ่ม: KOKO PLACE ลาดกระบัง</div>
 </header>
 
@@ -237,7 +237,7 @@ const ROADS=[
  ['33',2,[[100.86,14.17],[101.21,14.2],[101.37,14.05],[102.07,13.82],[102.5,13.69]]],
  ['35',2,[[100.45,13.68],[100.27,13.55],[99.95,13.42],[99.86,13.36]]],
  ['36',2,[[100.9,12.95],[101.27,12.68]]],
- ['41',2,[[99.08,9.95],[99.2,9.39],[99.33,9.14],[99.68,8.16],[100.08,7.62]]],
+ ['41',2,[[99.18,10.49],[99.08,9.95],[99.2,9.39],[99.33,9.14],[99.68,8.16],[100.08,7.62]]],
  ['43',2,[[100.47,7.01],[101.25,6.87]]],
  ['42',2,[[101.25,6.87],[101.82,6.43]]],
  ['44',2,[[98.91,8.09],[99.4,8.7],[99.85,9.2]]],
@@ -249,6 +249,32 @@ const ROADS=[
  ['401',3,[[99.33,9.14],[99.96,8.43]]],
  ['340',3,[[100.4,13.95],[100.12,14.47]]]
 ];
+const S4=['35','4'],N1=['32','1'],E2=['1','2'],DS=['35','4','41','4'];
+const CH={'พระนครศรีอยุธยา':['32'],'อ่างทอง':['32'],'ลพบุรี':['1'],'สิงห์บุรี':['32'],'ชัยนาท':['32'],'นครสวรรค์':['32'],'อุทัยธานี':['32'],'กำแพงเพชร':N1,'พิจิตร':['32','11'],'พิษณุโลก':['32','11'],'ตาก':N1,'สุโขทัย':['32','11','12'],'อุตรดิตถ์':['32','11'],'แพร่':['32','11','101'],'ลำปาง':N1,'น่าน':['32','11','101'],'ลำพูน':['32','1','11'],'เชียงใหม่':['32','1','11'],'พะเยา':N1,'เชียงราย':N1,'แม่สาย (เชียงราย)':N1,'แม่ฮ่องสอน':['32','1','11','108'],
+'นครนายก':['33'],'สระบุรี':['1'],'มวกเหล็ก (สระบุรี)':E2,'ปากช่อง / เขาใหญ่':E2,'นครราชสีมา':E2,'เพชรบูรณ์':['1','21'],'ชัยภูมิ':E2,'บุรีรัมย์':['1','2','24'],'ขอนแก่น':E2,'สุรินทร์':['1','2','24'],'มหาสารคาม':['1','2','23'],'ร้อยเอ็ด':['1','2','23'],'กาฬสินธุ์':['1','2','12'],'ศรีสะเกษ':['1','2','24'],'หนองบัวลำภู':E2,'อุดรธานี':E2,'เลย':['1','21'],'ยโสธร':['1','2','23'],'หนองคาย':E2,'อุบลราชธานี':['1','2','24'],'อำนาจเจริญ':['1','2','23'],'สกลนคร':['1','2','22'],'มุกดาหาร':['1','2','12'],'นครพนม':['1','2','22'],'บึงกาฬ':E2,
+'ชลบุรี / บางแสน':['7'],'พัทยา (ชลบุรี)':['7'],'สัตหีบ (ชลบุรี)':['7','3'],'ระยอง':['7','36'],'จันทบุรี':['7','36','3'],'ตราด':['7','36','3'],'หาดเล็ก (ตราด)':['7','36','3'],
+'นครปฐม':['4'],'สุพรรณบุรี':['340'],'ราชบุรี':['4'],'กาญจนบุรี':['4','323'],'ไทรโยค (กาญจนบุรี)':['4','323'],'ทองผาภูมิ (กาญจนบุรี)':['4','323'],'สังขละบุรี (กาญจนบุรี)':['4','323'],'ด่านเจดีย์สามองค์':['4','323'],
+'สมุทรสาคร (มหาชัย)':['35'],'สมุทรสงคราม / อัมพวา':['35'],'เพชรบุรี':S4,'ชะอำ (เพชรบุรี)':S4,'แก่งกระจาน (เพชรบุรี)':S4,'หัวหิน (ประจวบฯ)':S4,'ปราณบุรี / สามร้อยยอด':S4,'ประจวบคีรีขันธ์':S4,'บางสะพาน (ประจวบฯ)':S4,'ชุมพร':S4,'ไชยา (สุราษฎร์ฯ)':['35','4','41'],'ระนอง':S4,'สุราษฎร์ธานี':['35','4','41'],'นครศรีธรรมราช':['35','4','41','401'],'พังงา':S4,'กระบี่':S4,'พัทลุง':['35','4','41'],'ภูเก็ต':['35','4','402'],'ตรัง':DS,'สงขลา (หาดใหญ่)':DS,'สตูล':DS,'ปัตตานี':[...DS,'43'],'ยะลา':[...DS,'43','410'],'นราธิวาส':[...DS,'43','42'],'เบตง (ยะลา)':[...DS,'43','410']};
+const RD=Object.fromEntries(ROADS.map(r=>[r[0],r]));
+const dd=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const near=(pts,p)=>{let bi=0;pts.forEach((q,i)=>{if(dd(q,p)<dd(pts[bi],p))bi=i});return bi};
+// เส้นทางจากจุดเริ่มไปจุดหมาย: [{n,c,pts}] ตัดเฉพาะช่วงถนนที่ใช้
+function pathTo(s){
+  const ch=CH[s[0]]||[],out=[];let prev=[START.lng,START.lat];const dst=[s[4],s[3]];
+  if(!ch.length)return [{n:'',c:0,pts:[prev,dst]}];
+  ch.forEach((n,i)=>{
+    const [,c,pts]=RD[n];let a=near(pts,prev),b;
+    if(i===ch.length-1)b=near(pts,dst);
+    else{const nx=RD[ch[i+1]][2];const cand=[];pts.forEach((q,j)=>{if(j>a&&nx.some(r=>dd(q,r)<0.2))cand.push(j)});
+      if(cand.length)b=cand[0];else{let bd=1e9;pts.forEach((q,j)=>nx.forEach(r=>{if(dd(q,r)<bd){bd=dd(q,r);b=j}}))}}
+    const st=b>=a?1:-1;
+    if(a!==b&&dd(prev,pts[a+st])<dd(pts[a],pts[a+st]))a+=st;
+    const seg=[prev];for(let j=a;st>0?j<=b:j>=b;j+=st)seg.push(pts[j]);
+    if(i===ch.length-1&&dd(seg[seg.length-1],dst)>0.05)seg.push(dst);
+    out.push({n,c,pts:seg});prev=seg[seg.length-1];
+  });
+  return out;
+}
 const RC={1:'#d93a32',2:'#1f5fbf',3:'#3a9a55'},RW={1:2.6,2:1.8,3:1.3};
 const LO0=97.3,LO1=105.9,LA0=5.4,LA1=20.8,CX=Math.cos(13*Math.PI/180);
 const $=id=>document.getElementById(id);
@@ -269,7 +295,7 @@ function hitHTML(s,r,showDir){
   return '<div class="hit"><div class="hn"><span class="place">'+esc(s[0])+'</span><span class="kind">'+(s[7]?'จังหวัด':'จุดแวะ')+'</span>'+
    (showDir?'<span class="tag" style="background:'+r.c+';color:#fff">'+r.name+'</span>':'')+
    (s[1]>=r.max?'<span class="tag">ปลายทางสาย</span>':'')+'</div>'+
-   '<div class="meta">ขับ ~<b>'+fmtH(s[1])+'</b> · ~<b>'+s[2].toLocaleString()+' km</b> · ไปทาง <span class="rd'+(/^ทล\.\d$/.test(s[6])?' r1':'')+'">'+esc(s[6])+'</span></div>'+
+   '<div class="meta">ขับ ~<b>'+fmtH(s[1])+'</b> · ~<b>'+s[2].toLocaleString()+' km</b></div>'+
    '<ul class="spots">'+s[5].split('|').map(x=>'<li><a href="'+navQ(x,s)+'" target="_blank" rel="noopener">'+esc(x)+'</a></li>').join('')+'</ul>'+
    '<a class="nav" href="'+navC(s)+'" target="_blank" rel="noopener">นำทางไปตัวเมือง ↗</a></div>';
 }
@@ -281,10 +307,13 @@ function drawMap(){
   const st=P(START.lng,START.lat);
   let h='<path d="M'+TH.map(p=>P(p[0],p[1]).join(',')).join('L')+'Z" fill="var(--land)" stroke="var(--coast)" stroke-width="1.2" stroke-linejoin="round"/>';
   let shields='';
-  ROADS.forEach(([n,c,pts])=>{
+  const segs={},shown=new Set();
+  ALL.filter(x=>inWin(x.s)).forEach(({s})=>pathTo(s).forEach(g=>{segs[g.n+'|'+g.pts.join(';')]=g}));
+  Object.values(segs).forEach(({n,c,pts})=>{
     const q=pts.map(p=>P(p[0],p[1]));
+    if(!c){h+='<polyline points="'+q.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="var(--mut)" stroke-width="1.6" stroke-dasharray="4 3"/>';return}
     h+='<polyline points="'+q.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="'+RC[c]+'" stroke-width="'+RW[c]+'" stroke-opacity=".7" stroke-linecap="round" stroke-linejoin="round"/>';
-    if(c<3||W>=420){const a=q[Math.floor((q.length-1)/2)],b=q[Math.ceil((q.length-1)/2)],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,w=n.length*6.5+8;
+    if(!shown.has(n)){shown.add(n);const a=q[Math.floor((q.length-1)/2)],b=q[Math.ceil((q.length-1)/2)],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,w=n.length*6.5+8;
       shields+='<g><rect x="'+(mx-w/2)+'" y="'+(my-7.5)+'" width="'+w+'" height="15" rx="3" fill="'+(c===1?'#c62f28':c===2?'#0b4ea2':'#2f7d46')+'" stroke="#fff" stroke-width="1"/><text x="'+mx+'" y="'+(my+4)+'" font-size="10.5" font-weight="700" text-anchor="middle" fill="#fff" font-family="Sarabun,sans-serif">'+n+'</text></g>';}
   });
   let top='',labels=[];
@@ -319,10 +348,8 @@ function render(){
       body='<div class="near">ไม่มีจุดตรงเวลานี้ · '+(prev?'ก่อนหน้า <b>'+esc(prev[0])+'</b> ~'+fmtH(prev[1]):'ยังไม่ออกนอกกรุงเทพฯ')+(next?' · ถัดไป <b>'+esc(next[0])+'</b> ~'+fmtH(next[1]):'')+'</div>';
     }
     const done=r.s.filter(s=>s[1]<=T+0.25).length;
-    const last=r.s[done-1],groups=[];
-    r.s.forEach(s=>{let g=groups.find(g=>g.rd===s[6]);if(!g)groups.push(g={rd:s[6],s:[]});g.s.push(s)});
-    const tl=groups.map(g=>'<div class="tlg"><span class="rd'+(/^ทล\.\d$/.test(g.rd)?' r1':'')+'">'+esc(g.rd)+'</span><div class="tl" style="--c:'+r.c+'">'+g.s.map(s=>'<div class="'+(s[1]<=T+0.25?'on':'')+(inWin(s)||(!hits.length&&s===last)?' cur':'')+'">'+esc(area(s))+'<br>'+s[1]+' ชม.</div>').join('')+'</div></div>').join('');
-    return '<article class="card"><div class="ch" style="background:'+r.c+'"><span class="arrow">'+r.arrow+'</span>'+r.name+' <span class="rd">'+esc(r.road)+'</span><span class="end">ปลายทาง '+esc(r.end)+' ~'+fmtH(r.max)+'</span></div><div class="cb">'+body+tl+'<div class="count">ไปถึงแล้ว '+done+' / '+r.s.length+' จุดในสายนี้</div></div></article>';
+    const tl='<div class="tl" style="--c:'+r.c+'">'+r.s.map((s,i)=>'<div class="'+(i<done?'on':'')+(inWin(s)||(!hits.length&&i===done-1)?' cur':'')+'">'+esc(area(s))+'<br>'+s[1]+' ชม.</div>').join('')+'</div>';
+    return '<article class="card"><div class="ch" style="background:'+r.c+'"><span class="arrow">'+r.arrow+'</span>'+r.name+'<span class="end">ปลายทาง '+esc(r.end)+' ~'+fmtH(r.max)+'</span></div><div class="cb">'+body+tl+'<div class="count">ไปถึงแล้ว '+done+' / '+r.s.length+' จุดในสายนี้</div></div></article>';
   }).join('');
   $('legend').innerHTML=R.map(r=>'<span><i style="background:'+r.c+'"></i>'+r.name+'</span>').join('')+'<span><i style="background:var(--yel);transform:rotate(45deg)"></i>KOKO PLACE</span><span>จุดทึบ = ไปถึงแล้ว</span><span><i style="background:#d93a32;height:4px"></i>ทางหลวง 1 หลัก</span><span><i style="background:#1f5fbf;height:4px"></i>2 หลัก</span><span><i style="background:#3a9a55;height:3px"></i>3 หลัก</span>';
   document.querySelectorAll('.tl').forEach(t=>{const c=t.querySelector('.cur');if(c)t.scrollLeft=c.offsetLeft-t.clientWidth/2+c.offsetWidth/2});
