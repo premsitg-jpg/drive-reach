@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ขับกี่ ชม. ไปถึงไหน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: practical road-trip tool, friendly but exact
+   IDEA: Thai highway direction signs — blue boards, white letters, yellow road marking
+   PICTURE: drawn map of Thailand, every province dot coloured by สาย, the ones at the chosen time lit up
+   COLOUR and TYPE: sign blue + white, accent road-yellow; Kanit titles, Sarabun body
+   LAYOUT: sign-strip header, big −/+ time control + search, map beside 5 route cards; stacks on phone */
+:root{color-scheme:light dark;
+--bg:light-dark(#f4f6fa,#0b1020);--ink:light-dark(#121826,#eef2fb);--mut:light-dark(#5b6476,#9aa5bd);
+--card:light-dark(#fff,#141b2e);--line:light-dark(#dde3ee,#26304a);--sign:#0b4ea2;--sign2:light-dark(#e8f0fb,#132546);
+--yel:#f5c400;--land:light-dark(#e3e9f2,#1a2238);--coast:light-dark(#b9c4d6,#36425f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Sarabun,system-ui,sans-serif;overflow-x:clip}
+h1,.big{font-family:Kanit,Sarabun,sans-serif;font-weight:600;line-height:1.1;margin:0}
+header{background:var(--sign);color:#fff;padding:14px max(5vw,16px);display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;border-bottom:5px solid var(--yel)}
+header h1{font-size:clamp(22px,3.4vw,32px)}
+.ver{font:600 12px Sarabun,sans-serif;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:99px}
+.from{margin-inline-start:auto;font-size:14px;opacity:.92}
+.ctl{padding:18px max(5vw,16px) 6px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;max-width:1240px;margin:auto}
+.stepper{display:flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stepper button{width:56px;height:60px;border:0;background:var(--sign);color:#fff;font:600 30px Kanit,sans-serif;cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:default}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.tv{padding:0 16px;text-align:center;min-width:150px}
+.tv input{width:84px;font:600 34px Kanit,sans-serif;text-align:right;border:0;background:none;color:var(--ink);-moz-appearance:textfield}
+.tv input::-webkit-inner-spin-button{display:none}
+.tv span{font:600 20px Kanit,sans-serif}
+.pre{display:flex;flex-wrap:wrap;gap:8px}
+.pre button{min-height:44px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 15px Sarabun,sans-serif;cursor:pointer}
+.pre button[aria-pressed=true]{background:var(--yel);border-color:var(--yel);color:#111}
+.search{max-width:1240px;margin:auto;padding:8px max(5vw,16px) 0}
+.search input{width:100%;max-width:520px;min-height:48px;padding:0 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:16px Sarabun,sans-serif}
+#res{display:grid;gap:10px;margin-top:10px;max-width:760px}
+.summary{max-width:1240px;margin:auto;padding:8px max(5vw,16px) 0;color:var(--mut);font-size:14px}
+.summary b{color:var(--ink)}
+.wrap{max-width:1240px;margin:auto;padding:10px max(5vw,16px) 40px;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start}
+.mapbox{position:sticky;top:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px}
+.fig{position:relative;aspect-ratio:0.62}.fig svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mut);padding:6px 4px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
+.cards{display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.ch{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:10px 16px;color:#fff;font:600 17px Kanit,sans-serif}
+.ch .arrow{font-size:22px;line-height:1}
+.ch .end{margin-inline-start:auto;font:400 13px Sarabun,sans-serif;opacity:.92}
+.cb{padding:6px 16px 14px}
+.hit{padding:12px 0;border-bottom:1px solid var(--line)}.hit:last-child{border-bottom:0}
+.hn{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.place{font:600 clamp(20px,2.6vw,25px)/1.15 Kanit,Sarabun,sans-serif}
+.kind{font-size:12px;padding:1px 7px;border-radius:6px;border:1px solid var(--line);color:var(--mut)}
+.meta{color:var(--mut);font-size:14px;margin:2px 0 8px}
+.meta b{color:var(--ink);white-space:nowrap}
+.tag{display:inline-block;font:600 12px Sarabun,sans-serif;padding:2px 8px;border-radius:6px;background:var(--yel);color:#111}
+.spots{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;padding:0;list-style:none}
+.spots a{display:inline-flex;align-items:center;min-height:36px;font-size:14px;padding:4px 10px;border-radius:8px;background:var(--sign2);color:var(--ink);text-decoration:none}
+.spots a::after{content:"↗";margin-inline-start:6px;color:var(--sign);font-weight:600}
+.nav{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;background:var(--sign);color:#fff;text-decoration:none;font-weight:600}
+.near{font-size:14px;color:var(--mut);padding:10px 0 0}
+.near b{color:var(--ink)}
+.tl{position:relative;display:flex;margin-top:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.tl div{flex:0 0 74px;font-size:12px;color:var(--mut);text-align:center;position:relative;padding-top:18px;line-height:1.3}
+.tl div::before{content:"";position:absolute;top:6px;left:0;right:0;height:3px;background:var(--line)}
+.tl div:first-child::before{left:50%}.tl div:last-child::before{right:50%}
+.tl div::after{content:"";position:absolute;top:1px;left:calc(50% - 6px);width:13px;height:13px;border-radius:50%;background:var(--card);border:2px solid var(--line)}
+.tl div.on::before{background:var(--c)}.tl div.on::after{background:var(--c);border-color:var(--c)}
+.tl div.cur{color:var(--ink);font-weight:600}.tl div.cur::after{box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 35%,transparent)}
+.rd{display:inline-block;font:600 13px Sarabun,sans-serif;padding:1px 8px;border-radius:5px;background:#fff;color:#0b4ea2;border:1.5px solid #0b4ea2}
+.rd.r1{color:#c62f28;border-color:#c62f28}
+.ch .rd{border-color:#fff}
+.tlg{margin-top:12px}
+.tlg .tl{margin-top:4px}
+.count{font-size:13px;color:var(--mut);padding-top:8px;border-top:1px dashed var(--line);margin-top:6px}
+footer{max-width:1240px;margin:auto;padding:0 max(5vw,16px) 40px;font-size:13px;color:var(--mut)}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}.mapbox{position:static}.fig{aspect-ratio:0.72;max-height:72vh;margin:auto}}
+@media(prefers-reduced-motion:no-preference){.pulse{animation:p 1.6s ease-out infinite}@keyframes p{0%{r:6;opacity:.7}100%{r:16;opacity:0}}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ขับกี่ ชม. ไปถึงไหน</h1><select id="verSel" aria-label="เลือกเวอร์ชัน" style="font:600 13px Sarabun,sans-serif;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:99px;padding:4px 8px;min-height:32px;cursor:pointer"><option style="color:#111" value="index.html">v1.5.0 (ล่าสุด)</option><option style="color:#111" value="v1-4.html" selected>v1.4.0</option><option style="color:#111" value="v1-3.html">v1.3.0</option><option style="color:#111" value="v1-2.html">v1.2.0</option><option style="color:#111" value="v1-1.html">v1.1.0</option><option style="color:#111" value="v1-0.html">v1.0.0</option></select><script>{const v=document.getElementById("verSel");v.addEventListener("change",()=>{location.href=v.value})}</script>
+  <div class="from">จุดเริ่ม: KOKO PLACE ลาดกระบัง</div>
+</header>
+
+<section class="ctl" aria-label="เลือกเวลาขับ">
+  <div class="stepper">
+    <button id="minus" aria-label="ลด 30 นาที">−</button>
+    <div class="tv"><input id="hrs" type="number" min="0.5" max="17" step="0.5" value="3" aria-label="ชั่วโมงขับรถ"><span> ชม.</span></div>
+    <button id="plus" aria-label="เพิ่ม 30 นาที">+</button>
+  </div>
+  <div class="pre" id="pre"></div>
+</section>
+<section class="search">
+  <input id="q" type="search" placeholder="ค้นหาจังหวัด / ที่เที่ยว เช่น น่าน, ภูทับเบิก" aria-label="ค้นหาจังหวัดหรือที่เที่ยว" autocomplete="off">
+  <div id="res"></div>
+</section>
+<div class="summary" id="sum"></div>
+
+<main class="wrap">
+  <div class="mapbox">
+    <div class="fig"><svg id="map" role="img" aria-label="แผนที่จังหวัดทั้งหมด แยกสีตามสาย"></svg></div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="cards" id="cards"></div>
+</main>
+<footer>เวลา/ระยะเป็นค่าประมาณจากลาดกระบังไปตัวเมือง ไม่รวมรถติดและเวลาแวะพัก — เวลาจริงกดนำทางดูใน Google Maps · แต่ละสายแสดงจุดที่ใช้เวลาอยู่ในช่วงที่เลือก ± 15 นาที · กดชื่อที่เที่ยวเพื่อนำทางไปที่นั่นได้</footer>
+
+<script>
+{
+const START={lat:13.7224941,lng:100.7113069};
+// [ชื่อ, ชม., km, lat, lng, ที่เที่ยว, เส้นทาง, 1=จังหวัด 0=จุดแวะ]
+const R=[
+ {k:'n',road:'ทล.32 → 1',name:'สายเหนือ',arrow:'↑',c:'#d6453d',end:'แม่สาย',s:[
+  ['ปทุมธานี',0.75,45,14.02,100.68,'อพวช. (พิพิธภัณฑ์วิทยาศาสตร์)|ดรีมเวิลด์','ปริมณฑล',1],
+  ['นนทบุรี',0.75,45,13.86,100.51,'เกาะเกร็ด|ท่าน้ำนนท์','ปริมณฑล',1],
+  ['พระนครศรีอยุธยา',1,85,14.355,100.568,'วัดมหาธาตุ|วัดไชยวัฒนาราม|วัดพระศรีสรรเพชญ์','ทล.32',1],
+  ['อ่างทอง',1.5,120,14.589,100.455,'วัดม่วง|วัดขุนอินทประมูล','ทล.32',1],
+  ['ลพบุรี',1.75,140,14.8,100.62,'พระปรางค์สามยอด|ศาลพระกาฬ|ทุ่งทานตะวัน','ทล.1',1],
+  ['สิงห์บุรี',2,150,14.887,100.401,'วัดพระนอนจักรสีห์|อุทยานค่ายบางระจัน','ทล.32',1],
+  ['ชัยนาท',2.5,195,15.186,100.125,'เขื่อนเจ้าพระยา|สวนนกชัยนาท','ทล.32',1],
+  ['นครสวรรค์',3.25,250,15.704,100.137,'บึงบอระเพ็ด|ต้นแม่น้ำเจ้าพระยา (ปากน้ำโพ)','ทล.32',1],
+  ['อุทัยธานี',3.25,230,15.38,100.02,'วัดท่าซุง|วัดสังกัสรัตนคีรี|ห้วยขาแข้ง','ทล.333',1],
+  ['กำแพงเพชร',4.25,340,16.483,99.522,'อุทยานประวัติศาสตร์กำแพงเพชร','ทล.1',1],
+  ['พิจิตร',4.25,330,16.44,100.35,'บึงสีไฟ|วัดโพธิ์ประทับช้าง','ทล.11',1],
+  ['พิษณุโลก',4.75,380,16.82,100.26,'พระพุทธชินราช (วัดใหญ่)|ภูหินร่องกล้า|น้ำตกแก่งโสภา','ทล.11',1],
+  ['ตาก',5.25,420,16.883,99.126,'สะพานแขวนเมืองตาก|เขื่อนภูมิพล','ทล.1',1],
+  ['สุโขทัย',5.5,430,17.01,99.82,'อุทยานประวัติศาสตร์สุโขทัย|อุทยานประวัติศาสตร์ศรีสัชนาลัย','ทล.12',1],
+  ['อุตรดิตถ์',5.75,490,17.62,100.1,'พระแท่นศิลาอาสน์|เขื่อนสิริกิติ์','ทล.11',1],
+  ['แพร่',6.5,550,18.14,100.14,'พระธาตุช่อแฮ|แพะเมืองผี|คุ้มวงศ์บุรี','ทล.101',1],
+  ['ลำปาง',7.25,600,18.288,99.49,'วัดพระธาตุลำปางหลวง|นั่งรถม้า|กาดกองต้า','ทล.1',1],
+  ['น่าน',8,670,18.78,100.77,'วัดภูมินทร์|ดอยเสมอดาว|บ่อเกลือ','ทล.101',1],
+  ['ลำพูน',8.25,670,18.58,99.01,'วัดพระธาตุหริภุญชัย|อุโมงค์ขุนตาน','ทล.11',1],
+  ['เชียงใหม่',8.5,690,18.79,98.99,'ดอยสุเทพ|ถนนคนเดินท่าแพ|ดอยอินทนนท์','ทล.11',1],
+  ['พะเยา',8.75,700,19.166,99.902,'กว๊านพะเยา|วัดอนาลโยทิพยาราม','ทล.1',1],
+  ['เชียงราย',9.75,790,19.91,99.84,'วัดร่องขุ่น|วัดร่องเสือเต้น|บ้านดำ','ทล.1',1],
+  ['แม่สาย (เชียงราย)',10.75,850,20.428,99.876,'ด่านแม่สาย|ดอยตุง|สามเหลี่ยมทองคำ','ทล.1',0],
+  ['แม่ฮ่องสอน',12.5,930,19.3,97.97,'ปาย|ปางอุ๋ง|สะพานซูตองเป้','ทล.108',1]]},
+ {k:'ne',road:'ทล.2',name:'สายอีสาน',arrow:'↗',c:'#e07b00',end:'หนองคาย',s:[
+  ['นครนายก',1.25,95,14.2,101.21,'น้ำตกสาริกา|เขื่อนขุนด่านปราการชล','ทล.33',1],
+  ['สระบุรี',1.5,110,14.53,100.91,'วัดพระพุทธบาท|น้ำตกเจ็ดสาวน้อย','ทล.1',1],
+  ['มวกเหล็ก (สระบุรี)',2,160,14.65,101.2,'ฟาร์มโคนมไทย-เดนมาร์ค|น้ำตกมวกเหล็ก','ทล.2',0],
+  ['ปากช่อง / เขาใหญ่',2.5,190,14.71,101.42,'อุทยานแห่งชาติเขาใหญ่|ฟาร์มโชคชัย|Palio เขาใหญ่','ทล.2',0],
+  ['นครราชสีมา',3.5,265,14.97,102.1,'อนุสาวรีย์ท้าวสุรนารี|ปราสาทหินพิมาย','ทล.2',1],
+  ['เพชรบูรณ์',4.25,330,16.42,101.16,'เขาค้อ|ภูทับเบิก|วัดพระธาตุผาซ่อนแก้ว','ทล.21',1],
+  ['ชัยภูมิ',5,340,15.81,102.03,'ทุ่งดอกกระเจียว ป่าหินงาม|มอหินขาว','ทล.201',1],
+  ['บุรีรัมย์',5.5,410,14.99,103.1,'ปราสาทพนมรุ้ง|ปราสาทเมืองต่ำ|ช้างอารีนา','ทล.24',1],
+  ['ขอนแก่น',6,455,16.43,102.83,'พระมหาธาตุแก่นนคร|บึงแก่นนคร|อุทยานไดโนเสาร์ภูเวียง','ทล.2',1],
+  ['สุรินทร์',6.25,450,14.88,103.49,'หมู่บ้านช้างตากลาง|ปราสาทศีขรภูมิ','ทล.24',1],
+  ['มหาสารคาม',6.25,475,16.18,103.3,'พระธาตุนาดูน|วนอุทยานโกสัมพี','ทล.23',1],
+  ['ร้อยเอ็ด',7,515,16.05,103.65,'หอโหวด 101|บึงพลาญชัย','ทล.23',1],
+  ['กาฬสินธุ์',7,520,16.43,103.51,'พิพิธภัณฑ์สิรินธร|เขื่อนลำปาว','ทล.12',1],
+  ['ศรีสะเกษ',7.25,540,15.12,104.32,'ปราสาทสระกำแพงใหญ่|วัดล้านขวด|ผามออีแดง','ทล.24',1],
+  ['หนองบัวลำภู',7.25,560,17.2,102.44,'ถ้ำเอราวัณ|ศาลสมเด็จพระนเรศวร','ทล.210',1],
+  ['อุดรธานี',7.5,570,17.41,102.79,'ทะเลบัวแดง|แหล่งโบราณคดีบ้านเชียง','ทล.2',1],
+  ['เลย',7.5,540,17.49,101.72,'เชียงคาน|ภูกระดึง|ภูเรือ','ทล.21',1],
+  ['ยโสธร',7.75,560,15.79,104.15,'พิพิธภัณฑ์พญาคันคาก|บุญบั้งไฟยโสธร','ทล.23',1],
+  ['หนองคาย',8.25,625,17.88,102.74,'ศาลาแก้วกู่|สะพานมิตรภาพไทย-ลาว|ตลาดท่าเสด็จ','ทล.2',1],
+  ['อุบลราชธานี',8.25,610,15.24,104.85,'ผาแต้ม|สามพันโบก|วัดหนองป่าพง','ทล.24',1],
+  ['อำนาจเจริญ',8.5,600,15.86,104.63,'พุทธอุทยานพระมงคลมิ่งเมือง','ทล.212',1],
+  ['สกลนคร',8.75,660,17.16,104.15,'พระธาตุเชิงชุม|หนองหาร|พระตำหนักภูพาน','ทล.22',1],
+  ['มุกดาหาร',9,650,16.54,104.72,'หอแก้วมุกดาหาร|ตลาดอินโดจีน|อุทยานภูผาเทิบ','ทล.12',1],
+  ['นครพนม',10,740,17.41,104.78,'พระธาตุพนม|พญาศรีสัตตนาคราช|ถนนริมโขง','ทล.22',1],
+  ['บึงกาฬ',10,760,18.36,103.65,'หินสามวาฬ|ภูทอก','ทล.222',1]]},
+ {k:'e',road:'มอเตอร์เวย์ 7 → ทล.3',name:'สายตะวันออก',arrow:'→',c:'#0e9aa7',end:'ตราด',s:[
+  ['ฉะเชิงเทรา',0.75,45,13.69,101.07,'วัดโสธรวรารามวรวิหาร|ตลาดบ้านใหม่','ทล.314',1],
+  ['ชลบุรี / บางแสน',1,75,13.28,100.92,'หาดบางแสน|เขาสามมุก|ตลาดหนองมน','มอเตอร์เวย์ 7',1],
+  ['ปราจีนบุรี',1.5,110,14.05,101.37,'อภัยภูเบศร|แก่งหินเพลิง|น้ำตกเหวนรก','ทล.33',1],
+  ['พัทยา (ชลบุรี)',1.5,125,12.93,100.88,'เกาะล้าน|สวนนงนุช|Walking Street พัทยา','มอเตอร์เวย์ 7',0],
+  ['สัตหีบ (ชลบุรี)',2,160,12.66,100.9,'หาดนางรำ|หาดเตยงาม','ทล.3',0],
+  ['ระยอง',2.5,195,12.68,101.27,'ท่าเรือบ้านเพ เกาะเสม็ด|หาดแม่รำพึง','ทล.36',1],
+  ['สระแก้ว',3,230,13.82,102.07,'ตลาดโรงเกลือ อรัญประเทศ|ละลุ|ปราสาทสด๊กก๊อกธม','ทล.33',1],
+  ['จันทบุรี',3.5,280,12.61,102.1,'อาสนวิหารพระนางมารีอา|ชุมชนริมน้ำจันทบูร|น้ำตกพลิ้ว','ทล.3',1],
+  ['ตราด',4.25,340,12.24,102.52,'ท่าเรือไปเกาะช้าง|ตลาดเทศบาลตราด','ทล.3',1],
+  ['หาดเล็ก (ตราด)',5.25,430,11.65,102.91,'จุดที่แคบที่สุดของไทย|ด่านหาดเล็ก','ทล.318',0]]},
+ {k:'w',road:'ทล.4 → 323',name:'สายตะวันตก',arrow:'←',c:'#7b4bc4',end:'ด่านเจดีย์สามองค์',s:[
+  ['กรุงเทพฯ (เกาะรัตนโกสินทร์)',0.75,35,13.75,100.49,'วัดพระแก้ว|วัดอรุณราชวราราม|เยาวราช','ในเมือง',1],
+  ['พุทธมณฑล (นครปฐม)',1,65,13.77,100.32,'พุทธมณฑล|ตลาดน้ำดอนหวาย','ทล.338',0],
+  ['นครปฐม',1.5,90,13.82,100.06,'พระปฐมเจดีย์|พระราชวังสนามจันทร์','ทล.4',1],
+  ['สุพรรณบุรี',1.75,120,14.47,100.12,'บึงฉวาก|ตลาดสามชุก|หอคอยบรรหาร-แจ่มใส','ทล.340',1],
+  ['ราชบุรี',2,115,13.54,99.81,'ตลาดน้ำดำเนินสะดวก|สวนผึ้ง|ถ้ำเขาบิน','ทล.4',1],
+  ['กาญจนบุรี',2.5,175,14.02,99.53,'สะพานข้ามแม่น้ำแคว|สุสานทหารสัมพันธมิตร|น้ำตกเอราวัณ','ทล.323',1],
+  ['ไทรโยค (กาญจนบุรี)',3.5,240,14.24,99.06,'น้ำตกไทรโยคน้อย|ทางรถไฟถ้ำกระแซ','ทล.323',0],
+  ['ทองผาภูมิ (กาญจนบุรี)',4.5,315,14.74,98.63,'เขื่อนวชิราลงกรณ|เหมืองปิล็อก','ทล.323',0],
+  ['สังขละบุรี (กาญจนบุรี)',5.75,390,15.15,98.45,'สะพานมอญ|วัดวังก์วิเวการาม','ทล.323',0],
+  ['ด่านเจดีย์สามองค์',6.25,410,15.3,98.4,'เจดีย์สามองค์|ตลาดชายแดนพระเจดีย์สามองค์','ทล.323',0]]},
+ {k:'s',road:'ทล.35 → 4 → 41',name:'สายใต้',arrow:'↓',c:'#1f8f4e',end:'เบตง',s:[
+  ['สมุทรปราการ',0.5,30,13.54,100.62,'เมืองโบราณ|สถานตากอากาศบางปู','ปริมณฑล',1],
+  ['สมุทรสาคร (มหาชัย)',1,70,13.55,100.27,'ตลาดทะเลไทย|วัดพันท้ายนรสิงห์','ทล.35',1],
+  ['สมุทรสงคราม / อัมพวา',1.5,105,13.42,99.95,'ตลาดน้ำอัมพวา|ตลาดร่มหุบ แม่กลอง','ทล.35',1],
+  ['เพชรบุรี',2.5,185,13.11,99.94,'พระนครคีรี เขาวัง|ถ้ำเขาหลวง|วัดมหาธาตุวรวิหาร','ทล.4',1],
+  ['ชะอำ (เพชรบุรี)',2.75,220,12.8,99.97,'มาลัยฟาร์ม|พระราชนิเวศน์มฤคทายวัน','ทล.4',0],
+  ['แก่งกระจาน (เพชรบุรี)',3,235,12.917,99.63,'เขื่อนแก่งกระจาน|อุทยานแห่งชาติแก่งกระจาน','ทล.3175',0],
+  ['หัวหิน (ประจวบฯ)',3.25,255,12.57,99.96,'ตลาดจั๊กจั่น|สถานีรถไฟหัวหิน|เขาหินเหล็กไฟ','ทล.4',0],
+  ['ปราณบุรี / สามร้อยยอด',4,300,12.21,99.97,'ถ้ำพระยานคร|อุทยานเขาสามร้อยยอด','ทล.4',0],
+  ['ประจวบคีรีขันธ์',4.75,345,11.81,99.8,'อ่าวมะนาว|เขาช่องกระจก','ทล.4',1],
+  ['บางสะพาน (ประจวบฯ)',5.5,420,11.21,99.51,'หาดบ้านกรูด|พระมหาธาตุเจดีย์ภักดีประกาศ','ทล.4',0],
+  ['ชุมพร',7,520,10.49,99.18,'หาดทุ่งวัวแล่น|ท่าเรือไปเกาะเต่า','ทล.4',1],
+  ['ไชยา (สุราษฎร์ฯ)',8.5,640,9.39,99.2,'วัดพระบรมธาตุไชยา|สวนโมกขพลาราม','ทล.41',0],
+  ['ระนอง',9,610,9.96,98.64,'บ่อน้ำร้อนรักษะวาริน|เกาะพยาม','ทล.4',1],
+  ['สุราษฎร์ธานี',9.5,680,9.14,99.33,'ท่าเรือดอนสัก|เขื่อนเชี่ยวหลาน','ทล.41',1],
+  ['นครศรีธรรมราช',11,780,8.43,99.96,'วัดพระมหาธาตุ นครศรีธรรมราช|หมู่บ้านคีรีวง|วัดเจดีย์ ไอ้ไข่','ทล.401',1],
+  ['พังงา',11.5,790,8.45,98.53,'อ่าวพังงา เกาะปันหยี|เขาหลัก|ท่าเรือทับละมุ','ทล.4',1],
+  ['กระบี่',11.5,810,8.09,98.91,'อ่าวนาง|ไร่เลย์|สระมรกต','ทล.4',1],
+  ['พัทลุง',11.5,840,7.62,100.08,'ทะเลน้อย|สะพานเฉลิมพระเกียรติ ทะเลน้อย','ทล.41',1],
+  ['ภูเก็ต',12.25,850,7.88,98.39,'หาดป่าตอง|แหลมพรหมเทพ|เมืองเก่าภูเก็ต','ทล.402',1],
+  ['ตรัง',12.25,860,7.56,99.61,'ถ้ำมรกต เกาะมุก|หาดปากเมง','ทล.4',1],
+  ['สงขลา (หาดใหญ่)',13,940,7.01,100.47,'ตลาดกิมหยง|หาดสมิหลา','ทล.4',1],
+  ['สตูล',14,980,6.62,100.07,'ท่าเรือปากบารา (เกาะหลีเป๊ะ)|อุทยานธรณีโลกสตูล','ทล.406',1],
+  ['ปัตตานี',14.5,1050,6.87,101.25,'มัสยิดกลางปัตตานี|มัสยิดกรือเซะ','ทล.43',1],
+  ['ยะลา',14.75,1060,6.54,101.28,'สวนขวัญเมือง|ถ้ำศิลป์','ทล.410',1],
+  ['นราธิวาส',15.5,1120,6.43,101.82,'หาดนราทัศน์|น้ำตกปาโจ|ด่านตากใบ','ทล.42',1],
+  ['เบตง (ยะลา)',17,1190,5.77,101.07,'Skywalk อัยเยอร์เวง|อุโมงค์ปิยะมิตร|ตู้ไปรษณีย์ใหญ่เบตง','ทล.410',0]]}
+];
+const PRE=[1,2,3,4,6,8,12,17];
+const TH=[[99.9,20.45],[100.1,20.3],[100.55,20.15],[100.6,19.6],[101.25,19.6],[101.2,18.8],[101.05,17.9],[101.65,17.9],[102.1,18.2],[102.75,17.92],[103.3,18.4],[103.65,18.4],[104.1,18.0],[104.78,17.4],[104.75,16.55],[105.4,15.8],[105.55,15.25],[105.55,14.4],[104.8,14.4],[103.5,14.4],[102.9,14.2],[102.5,13.65],[102.35,13.0],[102.6,12.25],[102.8,12.0],[102.92,11.62],[102.75,11.8],[102.4,12.15],[102.0,12.45],[101.4,12.65],[100.9,12.62],[100.85,13.4],[100.55,13.5],[100.0,13.38],[99.96,12.8],[99.97,12.3],[99.8,11.8],[99.35,10.9],[99.15,10.3],[99.25,9.5],[99.6,9.2],[99.95,8.6],[100.3,7.8],[100.55,7.2],[101.3,6.9],[101.8,6.5],[102.1,6.2],[101.8,5.82],[101.15,5.65],[100.9,6.2],[100.4,6.45],[100.1,6.5],[99.9,6.9],[99.6,7.3],[98.8,8.0],[98.3,7.8],[98.3,8.5],[98.4,9.5],[98.6,10.0],[98.8,10.5],[99.2,11.0],[99.6,11.8],[99.2,12.5],[99.15,13.2],[98.6,13.8],[98.2,14.5],[98.4,15.3],[98.6,16.0],[98.55,16.7],[98.0,17.5],[97.65,18.5],[97.8,19.0],[97.9,19.6],[98.3,19.8],[98.9,20.0],[99.5,20.35]];
+// [เลขถนน, ชั้น 1/2/3, [[lng,lat],...]] โยงระหว่างตัวเมืองโดยประมาณ
+const ROADS=[
+ ['1',1,[[100.62,13.99],[100.91,14.53],[100.62,14.8],[100.125,15.186],[100.137,15.704],[99.522,16.483],[99.126,16.883],[99.49,18.288],[99.902,19.166],[99.84,19.91],[99.876,20.428]]],
+ ['2',1,[[100.91,14.53],[101.2,14.65],[101.42,14.71],[102.1,14.97],[102.83,16.43],[102.79,17.41],[102.74,17.88]]],
+ ['3',1,[[100.6,13.6],[100.98,13.45],[100.92,13.28],[100.88,12.93],[100.9,12.66],[101.27,12.68],[102.1,12.61],[102.52,12.24]]],
+ ['4',1,[[100.45,13.72],[100.06,13.82],[99.81,13.54],[99.94,13.11],[99.97,12.8],[99.96,12.57],[99.97,12.21],[99.8,11.81],[99.51,11.21],[99.18,10.49],[98.64,9.96],[98.53,8.45],[98.91,8.09],[99.61,7.56],[100.08,7.62],[100.47,7.01]]],
+ ['7',1,[[100.71,13.72],[100.98,13.45],[100.92,13.28],[100.88,12.93]]],
+ ['11',2,[[100.33,14.99],[100.35,16.0],[100.26,16.82],[100.1,17.62],[100.05,17.98],[99.49,18.288],[99.01,18.58],[98.99,18.79]]],
+ ['12',2,[[99.126,16.883],[99.82,17.01],[100.26,16.82],[101.24,16.78],[102.83,16.43],[103.51,16.43],[104.72,16.54]]],
+ ['21',2,[[100.91,14.53],[101.05,15.4],[101.16,16.42],[101.24,16.78],[101.72,17.49]]],
+ ['22',2,[[102.79,17.41],[103.5,17.3],[104.15,17.16],[104.78,17.41]]],
+ ['23',2,[[102.73,16.06],[103.3,16.18],[103.65,16.05],[104.15,15.79],[104.85,15.24]]],
+ ['24',2,[[101.72,14.89],[102.79,14.63],[103.49,14.65],[104.32,14.75],[105.08,14.9]]],
+ ['32',2,[[100.58,14.23],[100.568,14.355],[100.455,14.589],[100.401,14.887],[100.125,15.186],[100.137,15.704]]],
+ ['33',2,[[100.86,14.17],[101.21,14.2],[101.37,14.05],[102.07,13.82],[102.5,13.69]]],
+ ['35',2,[[100.45,13.68],[100.27,13.55],[99.95,13.42],[99.86,13.36]]],
+ ['36',2,[[100.9,12.95],[101.27,12.68]]],
+ ['41',2,[[99.18,10.49],[99.08,9.95],[99.2,9.39],[99.33,9.14],[99.68,8.16],[100.08,7.62]]],
+ ['43',2,[[100.47,7.01],[101.25,6.87]]],
+ ['42',2,[[101.25,6.87],[101.82,6.43]]],
+ ['44',2,[[98.91,8.09],[99.4,8.7],[99.85,9.2]]],
+ ['323',3,[[99.87,13.82],[99.53,14.02],[99.06,14.24],[98.63,14.74],[98.45,15.15],[98.4,15.3]]],
+ ['410',3,[[101.25,6.87],[101.28,6.54],[101.27,6.15],[101.07,5.77]]],
+ ['101',3,[[100.05,17.98],[100.14,18.14],[100.77,18.78]]],
+ ['108',3,[[98.99,18.79],[98.5,18.45],[97.93,18.16],[97.97,19.3]]],
+ ['402',3,[[98.45,8.3],[98.39,7.88]]],
+ ['401',3,[[99.33,9.14],[99.96,8.43]]],
+ ['340',3,[[100.4,13.95],[100.12,14.47]]]
+];
+const S4=['35','4'],N1=['32','1'],E2=['1','2'],DS=['35','4','41','4'];
+const CH={'พระนครศรีอยุธยา':['32'],'อ่างทอง':['32'],'ลพบุรี':['1'],'สิงห์บุรี':['32'],'ชัยนาท':['32'],'นครสวรรค์':['32'],'อุทัยธานี':['32'],'กำแพงเพชร':N1,'พิจิตร':['32','11'],'พิษณุโลก':['32','11'],'ตาก':N1,'สุโขทัย':['32','11','12'],'อุตรดิตถ์':['32','11'],'แพร่':['32','11','101'],'ลำปาง':N1,'น่าน':['32','11','101'],'ลำพูน':['32','1','11'],'เชียงใหม่':['32','1','11'],'พะเยา':N1,'เชียงราย':N1,'แม่สาย (เชียงราย)':N1,'แม่ฮ่องสอน':['32','1','11','108'],
+'นครนายก':['33'],'สระบุรี':['1'],'มวกเหล็ก (สระบุรี)':E2,'ปากช่อง / เขาใหญ่':E2,'นครราชสีมา':E2,'เพชรบูรณ์':['1','21'],'ชัยภูมิ':E2,'บุรีรัมย์':['1','2','24'],'ขอนแก่น':E2,'สุรินทร์':['1','2','24'],'มหาสารคาม':['1','2','23'],'ร้อยเอ็ด':['1','2','23'],'กาฬสินธุ์':['1','2','12'],'ศรีสะเกษ':['1','2','24'],'หนองบัวลำภู':E2,'อุดรธานี':E2,'เลย':['1','21'],'ยโสธร':['1','2','23'],'หนองคาย':E2,'อุบลราชธานี':['1','2','24'],'อำนาจเจริญ':['1','2','23'],'สกลนคร':['1','2','22'],'มุกดาหาร':['1','2','12'],'นครพนม':['1','2','22'],'บึงกาฬ':E2,
+'ชลบุรี / บางแสน':['7'],'พัทยา (ชลบุรี)':['7'],'สัตหีบ (ชลบุรี)':['7','3'],'ระยอง':['7','36'],'จันทบุรี':['7','36','3'],'ตราด':['7','36','3'],'หาดเล็ก (ตราด)':['7','36','3'],
+'นครปฐม':['4'],'สุพรรณบุรี':['340'],'ราชบุรี':['4'],'กาญจนบุรี':['4','323'],'ไทรโยค (กาญจนบุรี)':['4','323'],'ทองผาภูมิ (กาญจนบุรี)':['4','323'],'สังขละบุรี (กาญจนบุรี)':['4','323'],'ด่านเจดีย์สามองค์':['4','323'],
+'สมุทรสาคร (มหาชัย)':['35'],'สมุทรสงคราม / อัมพวา':['35'],'เพชรบุรี':S4,'ชะอำ (เพชรบุรี)':S4,'แก่งกระจาน (เพชรบุรี)':S4,'หัวหิน (ประจวบฯ)':S4,'ปราณบุรี / สามร้อยยอด':S4,'ประจวบคีรีขันธ์':S4,'บางสะพาน (ประจวบฯ)':S4,'ชุมพร':S4,'ไชยา (สุราษฎร์ฯ)':['35','4','41'],'ระนอง':S4,'สุราษฎร์ธานี':['35','4','41'],'นครศรีธรรมราช':['35','4','41','401'],'พังงา':S4,'กระบี่':S4,'พัทลุง':['35','4','41'],'ภูเก็ต':['35','4','402'],'ตรัง':DS,'สงขลา (หาดใหญ่)':DS,'สตูล':DS,'ปัตตานี':[...DS,'43'],'ยะลา':[...DS,'43','410'],'นราธิวาส':[...DS,'43','42'],'เบตง (ยะลา)':[...DS,'43','410']};
+const RD=Object.fromEntries(ROADS.map(r=>[r[0],r]));
+const dd=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const near=(pts,p)=>{let bi=0;pts.forEach((q,i)=>{if(dd(q,p)<dd(pts[bi],p))bi=i});return bi};
+// เส้นทางจากจุดเริ่มไปจุดหมาย: [{n,c,pts}] ตัดเฉพาะช่วงถนนที่ใช้
+function pathTo(s){
+  const ch=CH[s[0]]||[],out=[];let prev=[START.lng,START.lat];const dst=[s[4],s[3]];
+  if(!ch.length)return [{n:'',c:0,pts:[prev,dst]}];
+  ch.forEach((n,i)=>{
+    const [,c,pts]=RD[n];let a=near(pts,prev),b;
+    if(i===ch.length-1)b=near(pts,dst);
+    else{const nx=RD[ch[i+1]][2];const cand=[];pts.forEach((q,j)=>{if(j>a&&nx.some(r=>dd(q,r)<0.2))cand.push(j)});
+      if(cand.length)b=cand[0];else{let bd=1e9;pts.forEach((q,j)=>nx.forEach(r=>{if(dd(q,r)<bd){bd=dd(q,r);b=j}}))}}
+    const st=b>=a?1:-1;
+    if(a!==b&&dd(prev,pts[a+st])<dd(pts[a],pts[a+st]))a+=st;
+    const seg=[prev];for(let j=a;st>0?j<=b:j>=b;j+=st)seg.push(pts[j]);
+    if(i===ch.length-1&&dd(seg[seg.length-1],dst)>0.05)seg.push(dst);
+    out.push({n,c,pts:seg});prev=seg[seg.length-1];
+  });
+  return out;
+}
+const RC={1:'#d93a32',2:'#1f5fbf',3:'#3a9a55'},RW={1:2.6,2:1.8,3:1.3};
+const LO0=97.3,LO1=105.9,LA0=5.4,LA1=20.8,CX=Math.cos(13*Math.PI/180);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtH=h=>{const m=Math.round(h*60),H=Math.floor(m/60),M=m%60;return (H?H+' ชม.':'')+(M?(H?' ':'')+M+' นาที':'')||'0 นาที'};
+const ORI=START.lat+','+START.lng;
+const navC=s=>'https://www.google.com/maps/dir/?api=1&origin='+ORI+'&destination='+s[3]+','+s[4]+'&travelmode=driving';
+const area=s=>s[0].replace(/\s*\(.*?\)/g,'').split(' / ')[0];
+const navQ=(spot,s)=>{const q=spot.replace(/\s*\(.*?\)/g,'')+' '+area(s);return 'https://www.google.com/maps/dir/?api=1&origin='+ORI+'&destination='+encodeURIComponent(q)+'&travelmode=driving'};
+R.forEach(r=>{r.s.sort((a,b)=>a[1]-b[1]);r.max=r.s[r.s.length-1][1]});
+const ALL=R.flatMap(r=>r.s.map(s=>({r,s})));
+const NPROV=ALL.filter(x=>x.s[7]).length;
+let T=3;
+try{const v=parseFloat(localStorage.getItem('reachT'));if(v>=0.5&&v<=17)T=v}catch(e){}
+const inWin=s=>Math.abs(s[1]-T)<=0.25;
+
+function hitHTML(s,r,showDir){
+  return '<div class="hit"><div class="hn"><span class="place">'+esc(s[0])+'</span><span class="kind">'+(s[7]?'จังหวัด':'จุดแวะ')+'</span>'+
+   (showDir?'<span class="tag" style="background:'+r.c+';color:#fff">'+r.name+'</span>':'')+
+   (s[1]>=r.max?'<span class="tag">ปลายทางสาย</span>':'')+'</div>'+
+   '<div class="meta">ขับ ~<b>'+fmtH(s[1])+'</b> · ~<b>'+s[2].toLocaleString()+' km</b></div>'+
+   '<ul class="spots">'+s[5].split('|').map(x=>'<li><a href="'+navQ(x,s)+'" target="_blank" rel="noopener">'+esc(x)+'</a></li>').join('')+'</ul>'+
+   '<a class="nav" href="'+navC(s)+'" target="_blank" rel="noopener">นำทางไปตัวเมือง ↗</a></div>';
+}
+
+function drawMap(){
+  const svg=$('map'),W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+  const sx=(LO1-LO0)*CX,sy=LA1-LA0,k=Math.min(W/sx,H/sy),ox=(W-sx*k)/2,oy=(H-sy*k)/2;
+  const P=(lng,lat)=>[+(ox+(lng-LO0)*CX*k).toFixed(1),+(oy+(LA1-lat)*k).toFixed(1)];
+  const st=P(START.lng,START.lat);
+  let h='<path d="M'+TH.map(p=>P(p[0],p[1]).join(',')).join('L')+'Z" fill="var(--land)" stroke="var(--coast)" stroke-width="1.2" stroke-linejoin="round"/>';
+  let shields='';
+  const segs={},shown=new Set();
+  ALL.filter(x=>inWin(x.s)).forEach(({s})=>pathTo(s).forEach(g=>{segs[g.n+'|'+g.pts.join(';')]=g}));
+  Object.values(segs).forEach(({n,c,pts})=>{
+    const q=pts.map(p=>P(p[0],p[1]));
+    if(!c){h+='<polyline points="'+q.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="var(--mut)" stroke-width="1.6" stroke-dasharray="4 3"/>';return}
+    h+='<polyline points="'+q.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="'+RC[c]+'" stroke-width="'+RW[c]+'" stroke-opacity=".7" stroke-linecap="round" stroke-linejoin="round"/>';
+    if(!shown.has(n)){shown.add(n);const a=q[Math.floor((q.length-1)/2)],b=q[Math.ceil((q.length-1)/2)],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,w=n.length*6.5+8;
+      shields+='<g><rect x="'+(mx-w/2)+'" y="'+(my-7.5)+'" width="'+w+'" height="15" rx="3" fill="'+(c===1?'#c62f28':c===2?'#0b4ea2':'#2f7d46')+'" stroke="#fff" stroke-width="1"/><text x="'+mx+'" y="'+(my+4)+'" font-size="10.5" font-weight="700" text-anchor="middle" fill="#fff" font-family="Sarabun,sans-serif">'+n+'</text></g>';}
+  });
+  let top='',labels=[];
+  ALL.forEach(({r,s})=>{
+    const p=P(s[4],s[3]),w=inWin(s),done=s[1]<=T;
+    if(w){top+='<circle class="pulse" cx="'+p[0]+'" cy="'+p[1]+'" r="6" fill="'+r.c+'" opacity=".5"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="6" fill="'+r.c+'" stroke="#fff" stroke-width="2"/>';labels.push({p,s})}
+    else h+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+(done?3.2:2.6)+'" fill="'+(done?r.c:'var(--card)')+'" stroke="'+r.c+'" stroke-width="1.2" opacity="'+(done?.85:.7)+'"/>';
+  });
+  const fs=W<360?10.5:12.5,used=[];
+  labels.forEach(({p,s})=>{
+    const right=p[0]<W*0.62,y=p[1]+4;let yy=y;
+    while(used.some(u=>Math.abs(u.y-yy)<fs+1&&Math.abs(u.x-p[0])<90))yy+=fs+1;
+    used.push({x:p[0],y:yy});
+    top+='<text x="'+(p[0]+(right?9:-9))+'" y="'+yy+'" font-size="'+fs+'" font-weight="600" text-anchor="'+(right?'start':'end')+'" fill="var(--ink)" stroke="var(--card)" stroke-width="3.5" paint-order="stroke" font-family="Sarabun,sans-serif">'+esc(area(s))+'</text>';
+  });
+  h+=shields+top+'<rect x="'+(st[0]-6)+'" y="'+(st[1]-6)+'" width="12" height="12" rx="2" fill="var(--yel)" stroke="#111" stroke-width="1.5" transform="rotate(45 '+st[0]+' '+st[1]+')"/>';
+  svg.innerHTML=h;
+}
+
+function render(){
+  $('hrs').value=T;$('minus').disabled=T<=0.5;$('plus').disabled=T>=17;
+  $('pre').innerHTML=PRE.map(p=>'<button data-h="'+p+'" aria-pressed="'+(p===T)+'">'+p+' ชม.</button>').join('');
+  const nWin=ALL.filter(x=>inWin(x.s)).length,nProvDone=ALL.filter(x=>x.s[7]&&x.s[1]<=T+0.25).length;
+  $('sum').innerHTML='ขับ <b>'+fmtH(T)+'</b> (± 15 นาที) ถึง <b>'+nWin+'</b> จุด · ไปถึงแล้วรวม <b>'+nProvDone+' / '+NPROV+'</b> จังหวัด';
+  $('cards').innerHTML=R.map(r=>{
+    const hits=r.s.filter(inWin);
+    let body;
+    if(hits.length)body=hits.map(s=>hitHTML(s,r,false)).join('');
+    else if(T>r.max)body='<div class="near">เลยปลายทางแล้ว — <b>'+esc(r.end)+'</b> ใช้ ~'+fmtH(r.max)+'</div>'+hitHTML(r.s[r.s.length-1],r,false);
+    else{
+      const prev=[...r.s].reverse().find(s=>s[1]<T),next=r.s.find(s=>s[1]>T);
+      body='<div class="near">ไม่มีจุดตรงเวลานี้ · '+(prev?'ก่อนหน้า <b>'+esc(prev[0])+'</b> ~'+fmtH(prev[1]):'ยังไม่ออกนอกกรุงเทพฯ')+(next?' · ถัดไป <b>'+esc(next[0])+'</b> ~'+fmtH(next[1]):'')+'</div>';
+    }
+    const done=r.s.filter(s=>s[1]<=T+0.25).length;
+    const tl='<div class="tl" style="--c:'+r.c+'">'+r.s.map((s,i)=>'<div class="'+(i<done?'on':'')+(inWin(s)||(!hits.length&&i===done-1)?' cur':'')+'">'+esc(area(s))+'<br>'+s[1]+' ชม.</div>').join('')+'</div>';
+    return '<article class="card"><div class="ch" style="background:'+r.c+'"><span class="arrow">'+r.arrow+'</span>'+r.name+'<span class="end">ปลายทาง '+esc(r.end)+' ~'+fmtH(r.max)+'</span></div><div class="cb">'+body+tl+'<div class="count">ไปถึงแล้ว '+done+' / '+r.s.length+' จุดในสายนี้</div></div></article>';
+  }).join('');
+  $('legend').innerHTML=R.map(r=>'<span><i style="background:'+r.c+'"></i>'+r.name+'</span>').join('')+'<span><i style="background:var(--yel);transform:rotate(45deg)"></i>KOKO PLACE</span><span>จุดทึบ = ไปถึงแล้ว</span><span><i style="background:#d93a32;height:4px"></i>ทางหลวง 1 หลัก</span><span><i style="background:#1f5fbf;height:4px"></i>2 หลัก</span><span><i style="background:#3a9a55;height:3px"></i>3 หลัก</span>';
+  document.querySelectorAll('.tl').forEach(t=>{const c=t.querySelector('.cur');if(c)t.scrollLeft=c.offsetLeft-t.clientWidth/2+c.offsetWidth/2});
+  drawMap();
+  try{localStorage.setItem('reachT',T)}catch(e){}
+}
+function search(){
+  const q=$('q').value.trim();
+  if(!q){$('res').innerHTML='';return}
+  const m=ALL.filter(({s})=>s[0].includes(q)||s[5].includes(q)||s[6]===q||s[6]==='ทล.'+q.replace(/^ทล\.?\s*/,'')).slice(0,8);
+  $('res').innerHTML=m.length?m.map(({r,s})=>'<div class="card"><div class="cb">'+hitHTML(s,r,true)+'</div></div>').join(''):'<div class="near">ไม่พบ "'+esc(q)+'" — ลองพิมพ์ชื่อจังหวัดหรือที่เที่ยว</div>';
+}
+function setT(v){v=Math.round(v*2)/2;if(isNaN(v))return;T=Math.min(17,Math.max(0.5,v));render()}
+$('minus').addEventListener('click',()=>setT(T-0.5));
+$('plus').addEventListener('click',()=>setT(T+0.5));
+$('hrs').addEventListener('change',e=>setT(parseFloat(e.target.value)));
+$('pre').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setT(+b.dataset.h)});
+$('q').addEventListener('input',search);
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowUp'||e.key==='+')setT(T+0.5);if(e.key==='ArrowDown'||e.key==='-')setT(T-0.5)});
+const ro=new ResizeObserver(drawMap);ro.observe($('map'));
+render();
+}
+</script>
+</body>
+</html>
